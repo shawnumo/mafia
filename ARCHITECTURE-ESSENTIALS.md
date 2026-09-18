@@ -1,0 +1,23 @@
+# Architecture Essentials
+
+- **Stack:** React 18, Vite, strict TypeScript, Tailwind v3, Vitest, `vite-plugin-pwa`, GitHub Pages.
+- **Runtime:** one offline-first mobile web app on the GM's phone; no backend or accounts in v1.
+- **Source of truth:** pure, immutable TypeScript state transitions in `src/game/`; React never computes outcomes.
+- **State:** one JSON-serializable `GameState` state machine; `localStorage` snapshot after every accepted action.
+- **Current persistence:** roleless active snapshots hydrate automatically, save after state changes, and preserve corrupt data under a recovery key.
+- **Randomness:** injected deterministic `RandomSource` for role deals and fresh randomized voting order each round.
+- **Role setup:** the role table is the starting preset; in the roles variant Doctor, Detective, and Sheriff are independent GM controls at every player count, with roster-fit validation.
+- **Roles engine:** assignment and night resolution are pure TypeScript; doctor saves, detective results, sheriff outcomes, deaths, and wins stay outside React.
+- **Role reveal:** hold to peek, confirm finished, then manual GM advance; peek visibility is transient and never persisted.
+- **Phases:** setup, deal, discussion, voting, defense, runoff, reveal, night, morning, ended.
+- **Rules engine owns:** roles, deaths, saves, sheriff self-kill, votes, repeated runoffs, reveals, parity, and win checks.
+- **Privacy:** public selectors omit roles; voted-out roles reveal, night-death roles do not, all roles reveal at game end.
+- **Roleless privacy:** no GM means live play hides mafia and town counts; only neutral status is public until the final reveal.
+- **Night order:** mafia, sheriff, detective, doctor. Doctor saves are publicly announced only when successful; no failure feedback.
+- **Validation:** engine unit tests are the executable house rules; privacy/non-leakage tests are mandatory.
+- **UI:** cinematic but legible mobile-first GM-only cockpit, 44px touch targets, visible focus, reduced-motion support, no router.
+- **Flow:** roleless skips assignment/reveal; roles use hold + confirmation + manual GM advance; GM explicitly starts discussion/voting/night transitions.
+- **Safety:** invalid setup blocks start; phase advances, eliminations, and new games require confirmation; new games preserve names only.
+- **Alerts:** discussion and defense timers default to 5:00/0:30, remain configurable and GM-controlled, with optional sound/vibration.
+- **Tie defenses:** the defense preset is an upper bound applied separately to every tied candidate in sequence; the GM can advance early, waive a defense, or restart an expired current timer.
+- **Build order:** shell, engine, setup/deal, day loop, night wizard, rules/offline/deploy polish.
