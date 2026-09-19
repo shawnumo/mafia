@@ -4,15 +4,17 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        display: ['Georgia', 'serif'],
-        sans: ['"Trebuchet MS"', 'sans-serif']
+        display: ['"Iowan Old Style"', '"Palatino Linotype"', 'Georgia', 'serif'],
+        sans: ['"Segoe UI"', '"Helvetica Neue"', 'Arial', 'sans-serif']
       },
       colors: {
-        ink: '#102a2a',
-        paper: '#f4f0e8',
-        ember: '#c45232',
-        sage: '#829b78',
-        brass: '#b98a44'
+        ink: '#132122',
+        paper: '#f5efe4',
+        panel: '#fcf8f1',
+        ember: '#bf5b3d',
+        sage: '#5d7a63',
+        brass: '#b2894a',
+        clay: '#d78d60'
       }
     }
   },

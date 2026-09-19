@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { advanceRoleReveal, confirmRoleViewed, createRolesGame, currentRevealPlayer, publicRolesView, resolveNight, startNight, startRolesDiscussion } from './rolesEngine'
+import {
+  advanceRoleReveal,
+  castRoleVote,
+  confirmRoleViewed,
+  createRolesGame,
+  currentRevealPlayer,
+  publicRolesView,
+  resolveNight,
+  resolveRolesVote,
+  startNight,
+  startRolesDiscussion,
+  startRolesVoting
+} from './rolesEngine'
 
 const names = ['Ada', 'Ben', 'Cleo', 'Dara', 'Eli', 'Faye', 'Gus']
 const stableRandom = () => 0.999999
@@ -66,6 +78,11 @@ describe('roles game engine', () => {
     expect(result.savedPlayerId).toBe(mafiaTarget)
     expect(result.detectiveResult).toBe(true)
     expect(result.state.phase).toBe('morning')
+    expect(result.state.nightSummary).toEqual({
+      deaths: [],
+      savedPlayerId: mafiaTarget,
+      detectiveResult: true
+    })
   })
 
   it('resolves an innocent sheriff shot as a sheriff self-kill that cannot be saved', () => {
@@ -78,6 +95,30 @@ describe('roles game engine', () => {
     expect(result.deaths).toContain(sheriff.id)
     expect(result.deaths).toContain(mafiaTarget.id)
     expect(result.savedPlayerId).toBeNull()
+  })
+
+  it('starts a randomized roles day vote and resolves a plurality elimination', () => {
+    const game = startRolesDiscussion(createRolesGame({ playerNames: names, playerCount: 7, doctorEnabled: true, detectiveEnabled: true }, stableRandom))
+    const live = startRolesVoting(game, stableRandom)
+    const targetId = live.players[0].id
+    const voted = live.votingOrder.reduce((current, voterId) => castRoleVote(current, voterId, targetId), live)
+    const resolved = resolveRolesVote(voted)
+
+    expect(live.votingOrder).toHaveLength(live.players.length)
+    expect(voted.votes).toHaveProperty(live.votingOrder[0], targetId)
+    expect(resolved.phase).toBe('reveal')
+    expect(resolved.revealedPlayerId).toBe(targetId)
+  })
+
+  it('resolves tie runoffs until the roles vote is broken', () => {
+    const game = startRolesDiscussion(createRolesGame({ playerNames: names, playerCount: 7, doctorEnabled: true, detectiveEnabled: true }, stableRandom))
+    const live = startRolesVoting(game, stableRandom)
+    const [first, second, third, fourth, fifth, sixth, seventh] = live.votingOrder
+    const tied = live.votingOrder.reduce((current, voterId, index) => castRoleVote(current, voterId, [first, first, second, second, third, third, fourth][index]), live)
+    const defense = resolveRolesVote(tied)
+
+    expect(defense.phase).toBe('defense')
+    expect(defense.runoff?.candidates).toEqual([first, second, third])
   })
 
   it('resolves independent mafia and sheriff kills', () => {

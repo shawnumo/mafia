@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { clearActiveGame, loadRolelessGame, loadRolelessSession, saveRolelessGame, saveRolelessSession } from './persistence'
+import { clearActiveGame, loadRolelessGame, loadRolelessSession, loadRolesGame, saveRolelessGame, saveRolelessSession, saveRolesGame } from './persistence'
 import { createRolelessGame } from '../game/roleless'
+import { createRolesGame } from '../game/rolesEngine'
 
 function memoryStorage() {
   const values = new Map<string, string>()
@@ -35,6 +36,21 @@ describe('active game persistence', () => {
     saveRolelessSession(session, storage)
 
     expect(loadRolelessSession(storage)).toEqual(session)
+  })
+
+  it('round-trips a roles game snapshot', () => {
+    const storage = memoryStorage()
+    const game = createRolesGame({
+      playerNames: ['Ada', 'Ben', 'Cleo', 'Dara', 'Eli', 'Faye', 'Gus'],
+      playerCount: 7,
+      doctorEnabled: true,
+      detectiveEnabled: true,
+      sheriffEnabled: true
+    }, () => 0.99)
+
+    saveRolesGame(game, storage)
+
+    expect(loadRolesGame(storage)).toEqual(game)
   })
 
   it('preserves corrupt snapshots for recovery and starts clean', () => {
