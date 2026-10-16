@@ -8,3 +8,4 @@
 - Do not silently change house rules, public APIs, persistence format, or dependencies.
 - When a requirement is ambiguous, choose the smallest behavior consistent with the locked PRD and record the decision in architecture documentation.
 - Before finishing, run the narrowest relevant test plus `npm run build` when available, and report any remaining gaps.
+

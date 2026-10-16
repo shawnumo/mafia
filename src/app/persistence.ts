@@ -38,6 +38,9 @@ function isRolelessGameState(value: unknown): value is RolelessGameState {
   return candidate.variant === 'roleless'
     && typeof candidate.phase === 'string'
     && typeof candidate.round === 'number'
+    && typeof candidate.roleRevealIndex === 'number'
+    && typeof candidate.roleRevealConfirmed === 'boolean'
+    && typeof candidate.roleRevealComplete === 'boolean'
     && Array.isArray(candidate.players)
     && Array.isArray(candidate.votingOrder)
     && typeof candidate.votes === 'object'

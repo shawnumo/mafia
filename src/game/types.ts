@@ -26,6 +26,9 @@ export interface RolelessGameState {
   variant: 'roleless'
   phase: RolelessPhase
   round: number
+  roleRevealIndex: number
+  roleRevealConfirmed: boolean
+  roleRevealComplete: boolean
   players: RolelessPlayer[]
   votingOrder: PlayerId[]
   votes: Record<PlayerId, PlayerId>

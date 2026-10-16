@@ -163,9 +163,10 @@ The engine owns:
 - the role table as a starting preset, with independent Doctor, Detective, and Sheriff configuration at every player count;
 - roleless setup validation, deterministic role assignment, discussion-to-vote transitions, vote attribution, plurality elimination, repeated runoffs, reveal progression, and win checks;
 - mafia, town, special-role, and alive/dead invariants;
-- night resolution, including doctor-save announcement, sheriff self-kill override, independent kills, and no feedback for doctor failures;
-- randomized voting order, live vote attribution, plurality elimination, repeated tied runoffs, and excluded tied voters;
+- night resolution, including doctor-save announcement, sheriff abstention/self-kill, independent kills, and no feedback for doctor failures;
+- randomized voting order, live vote attribution, self-vote rejection, plurality elimination, repeated tied runoffs, and excluded tied voters;
 - reveal policy: voted-out roles, no night-death roles, all roles at game end;
+- roles-mode event history for night actions and consequences, exposed only after the game ends;
 - parity and zero-mafia win checks after each death event.
 
 The UI owns:
@@ -200,9 +201,9 @@ The roleless slice implements this boundary in `src/app/persistence.ts`: it hydr
 3. Board: alive/dead seat list, round, parity, and current phase.
 4. Discussion and vote: GM-controlled timer, randomized order, GM-only live attribution and tally, per-candidate sequential defense timers for ties with early GM advance, and explicit confirmation before phase changes or elimination.
 5. Tie flow: defense timer, tied candidates, eligible voters, repeatable runoff.
-6. Night wizard: one-step-at-a-time mafia, sheriff, detective, doctor sequence.
-7. Morning: deaths, public save announcement when applicable, and suggested script.
-8. End: winner, one-board full role reveal, and new-game action preserving names only.
+5. Night wizard: one-step-at-a-time mafia, sheriff (shoot or abstain), detective, doctor sequence.
+6. Morning: deaths, public save announcement when applicable, and suggested script; no detective identity or result.
+7. End: winner, one-board full role reveal, end-only role-action record, and new-game action preserving names only.
 9. Rules: searchable or scannable house-rule reference.
 
 Every screen must be usable at 320px wide, keep primary touch targets at least 44px, show visible focus states, and respect reduced motion.

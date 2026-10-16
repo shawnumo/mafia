@@ -30,11 +30,13 @@ export interface RolesGameState {
   votes: Record<PlayerId, PlayerId>
   runoff: RunoffState | null
   revealedPlayerId: PlayerId | null
+  eventLog: string[]
 }
 
 export interface NightActions {
   mafiaTargetId: PlayerId
   sheriffTargetId?: PlayerId
+  sheriffAbstained?: boolean
   detectiveGuessId?: PlayerId
   doctorTargetId?: PlayerId
 }
@@ -110,6 +112,7 @@ function leaders(votes: Record<PlayerId, PlayerId>, candidates: PlayerId[]): Pla
 function withElimination(state: RolesGameState, eliminatedId: PlayerId): RolesGameState {
   const players = state.players.map((player) => player.id === eliminatedId ? { ...player, alive: false } : player)
   const winner = winnerFor(players)
+  const eliminated = playerById(state.players, eliminatedId)
 
   return {
     ...state,
@@ -119,7 +122,8 @@ function withElimination(state: RolesGameState, eliminatedId: PlayerId): RolesGa
     runoff: null,
     votingOrder: [],
     revealedPlayerId: eliminatedId,
-    winner
+    winner,
+    eventLog: [...state.eventLog, `Day ${state.round}: ${eliminated.name} was voted out.`]
   }
 }
 
@@ -166,7 +170,8 @@ export function createRolesGame(options: RolesSetupOptions, random: RandomSource
     votingOrder: [],
     votes: {},
     runoff: null,
-    revealedPlayerId: null
+    revealedPlayerId: null,
+    eventLog: []
   }
 }
 
@@ -185,7 +190,7 @@ export function advanceRoleReveal(state: RolesGameState): RolesGameState {
   if (state.phase !== 'reveal') throw new Error('Role reveal is not active.')
   if (!state.revealConfirmed) throw new Error('The current player must confirm their role first.')
   const nextIndex = state.revealIndex + 1
-  if (nextIndex >= state.players.length) return { ...state, phase: 'discussion', revealConfirmed: false }
+  if (nextIndex >= state.players.length) return { ...state, phase: 'night', revealConfirmed: false }
   return { ...state, revealIndex: nextIndex, revealConfirmed: false }
 }
 
@@ -215,6 +220,7 @@ export function castRoleVote(state: RolesGameState, voterId: PlayerId, targetId:
 
   if (votes[voterId] !== undefined) throw new Error('This player has already voted.')
   if (voterId !== expectedVoter) throw new Error('Votes must be entered in the displayed order.')
+  if (voterId === targetId) throw new Error('Players cannot vote for themselves.')
   if (state.phase === 'runoff' && !voteState?.candidates.includes(targetId)) throw new Error('Runoff votes must target a tied player.')
 
   const nextVotes = { ...votes, [voterId]: targetId }
@@ -244,13 +250,17 @@ export function startRolesRunoff(state: RolesGameState, random: RandomSource = M
   return { ...state, phase: 'runoff', runoff }
 }
 
-export function resolveRolesRunoff(state: RolesGameState): RolesGameState {
+export function resolveRolesRunoff(state: RolesGameState, random: RandomSource = Math.random): RolesGameState {
   if (state.phase !== 'runoff' || !state.runoff || Object.keys(state.runoff.votes).length !== state.runoff.eligibleVoters.length) {
     throw new Error('The runoff is not complete.')
   }
 
   const tied = leaders(state.runoff.votes, state.runoff.candidates)
   if (tied.length > 1) {
+    if (state.runoff.eligibleVoters.length === 0) {
+      const eliminatedId = tied[Math.floor(random() * tied.length)]
+      return withElimination(state, eliminatedId)
+    }
     return { ...state, phase: 'defense', runoff: emptyRunoff(tied, state, state.runoff.number + 1) }
   }
 
@@ -279,6 +289,10 @@ export function resolveNight(state: RolesGameState, actions: NightActions): Nigh
   if (!doctor && actions.doctorTargetId) throw new Error('There is no living doctor.')
   if (!detective && actions.detectiveGuessId) throw new Error('There is no living detective.')
   if (!sheriff && actions.sheriffTargetId) throw new Error('There is no living sheriff.')
+  if (!sheriff && actions.sheriffAbstained) throw new Error('There is no living sheriff.')
+  if (actions.sheriffAbstained && actions.sheriffTargetId) throw new Error('The sheriff must choose a target or abstain.')
+  if (sheriff && !actions.sheriffTargetId && !actions.sheriffAbstained) throw new Error('The sheriff must choose a target or abstain.')
+  if (detective && actions.detectiveGuessId && actions.detectiveGuessId === detective.id) throw new Error('The detective cannot investigate themselves.')
   const doctorTarget = actions.doctorTargetId ? alivePlayerById(state.players, actions.doctorTargetId) : null
   const protectedMafiaTarget = doctorTarget?.id === mafiaTarget.id
   const deaths = new Set<PlayerId>()
@@ -295,6 +309,30 @@ export function resolveNight(state: RolesGameState, actions: NightActions): Nigh
   const players = state.players.map((player) => deaths.has(player.id) ? { ...player, alive: false } : player)
   const detectiveResult = detective && actions.detectiveGuessId ? playerById(state.players, actions.detectiveGuessId).role === 'mafia' : null
   const winner = winnerFor(players)
+  const nightLabel = `Night ${state.round}`
+  const mafiaNames = alivePlayers.filter((player) => player.role === 'mafia').map((player) => player.name).join(' and ')
+  const sheriffTarget = actions.sheriffTargetId ? playerById(state.players, actions.sheriffTargetId) : null
+  const detectiveTarget = actions.detectiveGuessId ? playerById(state.players, actions.detectiveGuessId) : null
+  const eventLog = [
+    ...state.eventLog,
+    `${nightLabel}: ${mafiaNames} decided to kill ${mafiaTarget.name}.`,
+    ...(sheriff
+      ? [actions.sheriffAbstained
+        ? `${nightLabel}: Sheriff ${sheriff.name} abstained from shooting.`
+        : `${nightLabel}: Sheriff ${sheriff.name} shot ${sheriffTarget?.name}.`]
+      : []),
+    ...(detective && detectiveTarget ? [`${nightLabel}: Detective ${detective.name} checked ${detectiveTarget.name} and found them ${detectiveResult ? 'to be mafia' : 'innocent'}.`] : []),
+    ...(doctor && doctorTarget ? [`${nightLabel}: Doctor ${doctor.name} protected ${doctorTarget.name}.`] : []),
+    ...[...deaths].map((id) => `${nightLabel} consequence: ${playerById(state.players, id).name} was killed.`),
+    ...(savedPlayerId ? [`${nightLabel} consequence: Doctor protection saved ${mafiaTarget.name}.`] : []),
+    ...(doctor && doctorTarget && !protectedMafiaTarget ? [`${nightLabel} consequence: Doctor protection did not prevent the mafia kill.`] : []),
+    ...(sheriff && sheriffTarget && sheriffTarget.role === 'mafia'
+      ? [`${nightLabel} consequence: Sheriff ${sheriff.name} killed mafia ${sheriffTarget.name} and survived.`]
+      : []),
+    ...(sheriff && sheriffTarget && sheriffTarget.role !== 'mafia'
+      ? [`${nightLabel} consequence: Sheriff ${sheriff.name} died after shooting an innocent player.`]
+      : [])
+  ]
 
   const nightSummary: NightSummary = {
     deaths: [...deaths],
@@ -303,7 +341,7 @@ export function resolveNight(state: RolesGameState, actions: NightActions): Nigh
   }
 
   return {
-    state: { ...state, phase: winner ? 'ended' : 'morning', players, winner, nightSummary, votingOrder: [], votes: {}, runoff: null, revealedPlayerId: null },
+    state: { ...state, phase: winner ? 'ended' : 'morning', players, winner, nightSummary, votingOrder: [], votes: {}, runoff: null, revealedPlayerId: null, eventLog },
     deaths: [...deaths],
     savedPlayerId,
     detectiveResult

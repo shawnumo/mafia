@@ -124,6 +124,9 @@ export function createRolelessGame(names: string[], mafiaOverride?: number, rand
     variant: 'roleless',
     phase: 'discussion',
     round: 1,
+    roleRevealIndex: 0,
+    roleRevealConfirmed: false,
+    roleRevealComplete: false,
     players,
     votingOrder: [],
     votes: {},
@@ -133,8 +136,28 @@ export function createRolelessGame(names: string[], mafiaOverride?: number, rand
   }
 }
 
+export function currentRolelessRevealPlayer(state: RolelessGameState): RolelessPlayer {
+  if (state.roleRevealComplete) throw new Error('Role reveal is already complete.')
+  return state.players[state.roleRevealIndex]
+}
+
+export function confirmRolelessViewed(state: RolelessGameState): RolelessGameState {
+  if (state.roleRevealComplete) throw new Error('Role reveal is already complete.')
+  if (state.roleRevealConfirmed) throw new Error('This role is already confirmed.')
+  return { ...state, roleRevealConfirmed: true }
+}
+
+export function advanceRolelessReveal(state: RolelessGameState): RolelessGameState {
+  if (state.roleRevealComplete) throw new Error('Role reveal is already complete.')
+  if (!state.roleRevealConfirmed) throw new Error('The current player must confirm their role first.')
+  const nextIndex = state.roleRevealIndex + 1
+  if (nextIndex >= state.players.length) return { ...state, roleRevealComplete: true, roleRevealConfirmed: false }
+  return { ...state, roleRevealIndex: nextIndex, roleRevealConfirmed: false }
+}
+
 export function startVoting(state: RolelessGameState, random: RandomSource = defaultRandom): RolelessGameState {
   if (state.phase !== 'discussion') throw new Error('Voting can only start from discussion.')
+  if (!state.roleRevealComplete) throw new Error('Role reveal must be complete before voting.')
   const voters = alivePlayers(state).map((player) => player.id)
 
   return { ...state, phase: 'voting', votingOrder: nextVotingOrder(state, voters, random), votes: {} }
@@ -151,6 +174,7 @@ export function castVote(state: RolelessGameState, voterId: PlayerId, targetId: 
 
   if (votes[voterId] !== undefined) throw new Error('This player has already voted.')
   if (voter.id !== expectedVoter) throw new Error('Votes must be entered in the displayed order.')
+  if (voterId === targetId) throw new Error('Players cannot vote for themselves.')
   if (state.phase === 'runoff' && !voteState?.candidates.includes(target.id)) throw new Error('Runoff votes must target a tied player.')
 
   const nextVotes = { ...votes, [voterId]: targetId }
@@ -180,13 +204,17 @@ export function startRunoff(state: RolelessGameState, random: RandomSource = def
   return { ...state, phase: 'runoff', runoff }
 }
 
-export function resolveRunoff(state: RolelessGameState): RolelessGameState {
+export function resolveRunoff(state: RolelessGameState, random: RandomSource = defaultRandom): RolelessGameState {
   if (state.phase !== 'runoff' || !state.runoff || Object.keys(state.runoff.votes).length !== state.runoff.eligibleVoters.length) {
     throw new Error('The runoff is not complete.')
   }
 
   const tied = leaders(state.runoff.votes, state.runoff.candidates)
   if (tied.length > 1) {
+    if (state.runoff.eligibleVoters.length === 0) {
+      const eliminatedId = tied[Math.floor(random() * tied.length)]
+      return withElimination(state, eliminatedId)
+    }
     return { ...state, phase: 'defense', runoff: emptyRunoff(tied, state, defaultRandom, state.runoff.number + 1) }
   }
 

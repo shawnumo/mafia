@@ -10,10 +10,12 @@
 - **Roles engine:** assignment and night resolution are pure TypeScript; doctor saves, detective results, sheriff outcomes, deaths, and wins stay outside React.
 - **Role reveal:** hold to peek, confirm finished, then manual GM advance; peek visibility is transient and never persisted.
 - **Phases:** setup, deal, discussion, voting, defense, runoff, reveal, night, morning, ended.
-- **Rules engine owns:** roles, deaths, saves, sheriff self-kill, votes, repeated runoffs, reveals, parity, and win checks.
-- **Privacy:** public selectors omit roles; voted-out roles reveal, night-death roles do not, all roles reveal at game end.
+- **Rules engine owns:** roles, deaths, saves, sheriff abstention/self-kill, votes, repeated runoffs, reveals, parity, and win checks.
+- **Privacy:** daytime table and morning report omit secret roles; detective identity/results stay hidden from morning; voted-out roles reveal, night-death roles do not, all roles and the roles-mode event record reveal at game end.
 - **Roleless privacy:** no GM means live play hides mafia and town counts; only neutral status is public until the final reveal.
-- **Night order:** mafia, sheriff, detective, doctor. Doctor saves are publicly announced only when successful; no failure feedback.
+- **Night order:** mafia, sheriff, detective, doctor. Sheriff may abstain; doctor saves are publicly announced only when successful; no failure feedback.
+- **Voting:** self-votes are rejected by the engine and omitted from UI targets in both variants.
+- **Role-game history:** night actions and consequences are recorded in state but rendered only after the game ends.
 - **Validation:** engine unit tests are the executable house rules; privacy/non-leakage tests are mandatory.
 - **UI:** cinematic but legible mobile-first GM-only cockpit, 44px touch targets, visible focus, reduced-motion support, no router.
 - **Flow:** roleless skips assignment/reveal; roles use hold + confirmation + manual GM advance; GM explicitly starts discussion/voting/night transitions.
