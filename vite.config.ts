@@ -15,6 +15,9 @@ export default defineConfig({
         description: 'An offline game runner for Mafia nights.',
         theme_color: '#102a2a',
         background_color: '#f4f0e8',
+        id: '/mafia/',
+        start_url: '/mafia/',
+        scope: '/mafia/',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
@@ -26,5 +29,6 @@ export default defineConfig({
       }
     })
   ],
-  base: './'
+  // GitHub Pages project site: https://shawnumo.github.io/mafia/
+  base: '/mafia/'
 })

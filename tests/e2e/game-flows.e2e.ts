@@ -27,12 +27,12 @@ async function completeSetup(page: Page, variant: 'roleless' | 'roles', playerCo
   await page.getByRole('button', { name: variant === 'roleless' ? /Start no-roles game/ : /Assign roles/ }).click()
 }
 
-/** React ignores programmatic range values, so move the slider with the keyboard like a user would. */
+/** The roster starts with seven playing seats; add placeholder players until the count is reached. */
 async function setPlayerCount(page: Page, playerCount: number) {
-  const slider = page.getByLabel('Players')
-  await slider.focus()
-  for (let count = Number(await slider.inputValue()); count < playerCount; count += 1) await slider.press('ArrowRight')
-  await expect(slider).toHaveValue(String(playerCount))
+  const count = page.getByTestId('playing-count')
+  const current = async () => Number((await count.innerText()).split(' ')[0])
+  while (await current() < playerCount) await page.getByRole('button', { name: 'Add player' }).click()
+  await expect(count).toHaveText(new RegExp(`^${playerCount} playing`))
 }
 
 function nightTarget(page: Page, name: string) {
@@ -106,7 +106,7 @@ async function resolveNight(page: Page, assignments: Record<string, string>) {
 }
 
 test('guided setup blocks duplicate names and explains the problem', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   await page.getByRole('textbox', { name: 'Player 7 name' }).fill('Player 01')
   await page.getByRole('button', { name: 'Continue' }).click()
   await page.getByRole('button', { name: 'Continue' }).click()
@@ -124,7 +124,7 @@ test('guided setup blocks duplicate names and explains the problem', async ({ pa
 })
 
 test('the detective follows the role table default and the roster survives a reload', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   await page.getByRole('textbox', { name: 'Player 1 name' }).fill('Ada')
   await page.getByRole('group', { name: 'Game variant' }).getByRole('button', { name: /^Roles/ }).click()
   await setPlayerCount(page, 9)
@@ -136,7 +136,7 @@ test('the detective follows the role table default and the roster survives a rel
 })
 
 test('the private reveal hides the role on pointer cancel and Exit always asks first', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   await completeSetup(page, 'roles')
   const peekButton = page.getByRole('button', { name: 'Press and hold to peek at role' })
   await peekButton.hover()
@@ -163,7 +163,7 @@ test('the private reveal hides the role on pointer cancel and Exit always asks f
 })
 
 test('roleless game supports undo, restore, live tally, hides roles, and reaches a winner', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   await completeSetup(page, 'roleless')
   const assignments = await revealAssignments(page, sevenPlayers, 'roleless')
   expect(await phase(page)).toBe('discussion')
@@ -223,7 +223,7 @@ test('roleless game supports undo, restore, live tally, hides roles, and reaches
 })
 
 test('roles game resumes, keeps the record hidden until the end, supports undo, and reaches a winner', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   await completeSetup(page, 'roles')
   const assignments = await revealAssignments(page, sevenPlayers, 'roles')
   await expect(page.getByRole('heading', { name: 'Night time' })).toBeVisible()
@@ -277,7 +277,7 @@ test('roles game resumes, keeps the record hidden until the end, supports undo, 
 })
 
 test('a 9-player roles game includes the detective and shows the answer only while held', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   await completeSetup(page, 'roles', 9)
   const players = Array.from({ length: 9 }, (_, index) => `Player ${String(index + 1).padStart(2, '0')}`)
   const assignments = await revealAssignments(page, players, 'roles')
@@ -308,7 +308,7 @@ test('a 9-player roles game includes the detective and shows the answer only whi
 
 test('game screens fit a 320px-wide phone without horizontal scrolling', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 })
-  await page.goto('/')
+  await page.goto('./')
   const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   expect(await overflow()).toBeLessThanOrEqual(0)
   await completeSetup(page, 'roleless')
@@ -321,18 +321,18 @@ test('game screens fit a 320px-wide phone without horizontal scrolling', async (
 })
 
 test('PWA manifest declares PNG and maskable icons and the cached shell opens offline', async ({ page, context }) => {
-  await page.goto('/')
+  await page.goto('./')
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready
   })
 
-  const manifestResponse = await page.request.get('/manifest.webmanifest')
+  const manifestResponse = await page.request.get('manifest.webmanifest')
   expect(manifestResponse.ok()).toBe(true)
   const manifest = await manifestResponse.json() as { icons: Array<{ sizes: string; type: string; purpose?: string }> }
   const pngIcons = manifest.icons.filter((icon) => icon.type === 'image/png')
   expect(pngIcons.map((icon) => icon.sizes)).toEqual(expect.arrayContaining(['192x192', '512x512']))
   expect(manifest.icons.some((icon) => icon.purpose === 'maskable')).toBe(true)
-  expect((await page.request.get('/apple-touch-icon.png')).ok()).toBe(true)
+  expect((await page.request.get('apple-touch-icon.png')).ok()).toBe(true)
 
   await context.setOffline(true)
   await page.reload()
