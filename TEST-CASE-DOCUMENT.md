@@ -128,10 +128,11 @@ For each scenario, validate:
 ### TC-09: Start roleless game
 - Steps:
   1. Configure a valid roleless setup.
-  2. Tap Start roleless game.
+  2. Tap Start no-roles game.
 - Expected:
-  - game starts into the discussion phase.
-  - no role reveal sequence is triggered.
+  - each player privately holds to peek whether they are mafia or civilian, confirms, and the phone moves on (ruling 2026-11-06).
+  - after the final confirmation the game opens the discussion phase.
+  - no role text appears on the screen except while a player is holding the peek button.
 
 ### TC-10: Start roles game
 - Steps:
@@ -192,9 +193,11 @@ For each scenario, validate:
 ### TC-16: Runoff repeat until broken
 - Steps:
   1. Cause a runoff tie.
+  2. Cause a main-vote tie that includes every living player.
 - Expected:
   - the runoff repeats rather than silently resolving.
-  - the same tie logic continues until one candidate survives.
+  - the same tie logic continues until one candidate is eliminated.
+  - when every living player is tied, everyone votes again; no player is ever eliminated at random (ruling 2026-11-06).
 
 ### TC-17: Reveal confirms and game proceeds to next round
 - Steps:
@@ -242,16 +245,20 @@ For each scenario, validate:
 - Steps:
   1. Press and hold the reveal button.
   2. Release it.
+  3. Hold again, then cancel the touch (for example, switch apps or trigger a system gesture).
 - Expected:
   - the role appears only while the button is being held.
-  - it disappears after release.
+  - it disappears after release, pointer cancel, window blur, or when the app is backgrounded.
+  - the button's accessible name never contains the role.
 
 ### TC-23: Player confirms they are finished viewing
 - Steps:
   1. Hold to peek and then tap I am done viewing.
 - Expected:
   - the player’s reveal is confirmed.
+  - the peek button is disabled ("Role hidden"), so the next holder cannot see this role.
   - the next player is not revealed until the GM advances.
+  - the reveal screen offers no Undo or Exit; only a confirmed "Pause reveal (GM)" leads to a role-free pause screen.
 
 ### TC-24: GM can manually advance through players
 - Steps:
@@ -260,11 +267,12 @@ For each scenario, validate:
   - each player is revealed one by one.
   - the GM must advance manually.
 
-### TC-25: Final reveal transition to discussion begins correctly
+### TC-25: Final reveal transition begins the game correctly
 - Steps:
-  1. Complete the final role reveal.
+  1. Complete the final role reveal and confirm the advance.
 - Expected:
-  - the game transitions into the discussion phase.
+  - roles games start Night 1; roleless games open the discussion phase (ruling 2026-11-06).
+  - undo and the activity timeline cannot return to any role-reveal step.
   - no extra role leak occurs.
 
 ---
@@ -297,10 +305,12 @@ For each scenario, validate:
 ### TC-29: Detective guess flow stays private
 - Steps:
   1. Select a detective guess.
-  2. Complete the night.
+  2. Hold the answer button, then release it.
+  3. Complete the night.
 - Expected:
-  - detective result is stored privately.
-  - no public reveal shows the result before the GM chooses how to narrate it.
+  - the GM sees thumbs up (mafia) or thumbs down (innocent) only while holding, before the doctor step.
+  - the result is not saved in the morning summary and never appears on the morning report.
+  - it appears in the game record only after the game ends.
 
 ### TC-30: Doctor protection works and is publicly announced only on successful save
 - Steps:
@@ -399,7 +409,8 @@ For each scenario, validate:
   1. Let defense timer reach zero.
   2. Restart it.
 - Expected:
-  - timer restarts cleanly.
+  - the optional sound and vibration fire once at zero.
+  - Restart timer runs the full defense time again.
   - state remains valid.
 
 ### TC-43: Runoff excludes tied players
@@ -437,16 +448,18 @@ For each scenario, validate:
 ### TC-47: Mafia win on parity
 - Steps:
   1. Reach a state where alive mafia equals alive town.
+  2. In a roles game, reach 2 mafia vs 3 town and have the mafia kill one town player while the sheriff shoots an innocent player.
 - Expected:
-  - mafia win triggers immediately.
+  - mafia win triggers immediately at parity.
+  - mafia also win when one night leaves them outnumbering the town (ruling 2026-11-06); the morning report is shown before the final board.
 
 ### TC-48: New game preserves names only
 - Steps:
   1. Start a game.
-  2. End the game and choose New game.
+  2. End the game and choose New game, then confirm.
 - Expected:
-  - player names remain.
-  - game settings and state reset.
+  - player names remain, including after a reload.
+  - variant, player count, mafia count, special roles, timers, and alerts return to their defaults.
   - previous in-progress state is cleared.
 
 ### TC-49: Exit game resets properly
@@ -494,20 +507,22 @@ For each scenario, validate:
 
 ### TC-54: Resume during night flow
 - Steps:
-  1. Start a night and leave before resolving it.
+  1. Start a night, record one or more night picks, and leave before resolving it.
   2. Refresh.
 - Expected:
-  - in-progress night state resumes appropriately.
-  - no role information is leaked in the public state.
+  - the night resumes on the same step with the earlier picks kept.
+  - Back returns to earlier steps; Clear this step resets only the current step.
+  - no detective answer is stored; it is recomputed on demand.
 
 ### TC-55: Corrupt or stale local storage recovery
 - Steps:
-  1. Manually tamper with the local storage state.
+  1. Manually tamper with the local storage state (invalid JSON, an unknown phase, a missing player, or an old version 1 save).
   2. Reload the app.
 - Expected:
-  - app recovers gracefully.
+  - a version 1 save is converted and resumes.
+  - an unreadable save is moved to the recovery key and setup opens with a visible notice.
   - no crashing or blank screen.
-  - valid fallback state is restored.
+  - if storage is full or blocked, the app shows a warning and keeps running.
 
 ---
 
@@ -573,7 +588,7 @@ For each scenario, validate:
 - Expected: all role combinations remain valid and manageable.
 
 ### TC-65: Determine winning parity when one mafia remains and town count matches
-- Expected: mafia win triggers exactly at parity threshold.
+- Expected: mafia win triggers at the parity threshold and whenever mafia outnumber the town.
 
 ### TC-66: Doctor repeats self-protection allowed
 - Expected: doctor can protect self without error.

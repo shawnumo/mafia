@@ -100,3 +100,12 @@ All open items resolved by the user: GM-only single device; variable 7–15 play
 ## Ruling addendum (2026-10-08)
 
 Players cannot vote for themselves in either variant. A living sheriff may explicitly abstain from shooting on any night. The roles-mode GM may consult the role-redacted table throughout daytime phases; detective identity and results stay off the morning report. The roles-game event record captures night actions and consequences but is visible only after the game ends.
+## Ruling addendum (2026-11-06)
+
+Recorded with the code-review fixes; these supersede the earlier text where they conflict.
+
+- **Roleless private reveal.** Roleless games keep a private hold-to-peek reveal so each player learns whether they are mafia or civilian; there is still no GM and no assignment step for the host. This supersedes "roleless games skip role reveal" above.
+- **Roles games open with Night 1.** After the private reveal the game goes straight to the first night. Rounds run Night N, morning, Day N; the round advances when the next night starts.
+- **Mafia win at or beyond parity.** Mafia win when alive mafia equal *or outnumber* alive town. One roles night can remove two town players, so strict equality could be skipped. A night that decides the game still shows the morning report before the final board.
+- **Everyone tied.** When every living player is tied there is nobody left to exclude, so the runoff becomes a fresh vote of all living players (self-votes still banned), repeated until broken. The app never breaks a tie at random.
+- **Night targets.** The mafia cannot target one of their own, the sheriff cannot shoot themselves, and the detective cannot check themselves or a dead player. The doctor may protect themselves.

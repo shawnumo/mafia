@@ -1,25 +1,21 @@
 # Architecture Essentials
 
-- **Stack:** React 18, Vite, strict TypeScript, Tailwind v3, Vitest, `vite-plugin-pwa`, GitHub Pages.
+- **Stack:** React 18, Vite, strict TypeScript, Tailwind v3, Vitest, Playwright, `vite-plugin-pwa`, GitHub Pages. Exact-pinned dependencies, npm only.
 - **Runtime:** one offline-first mobile web app on the GM's phone; no backend or accounts in v1.
-- **Source of truth:** pure, immutable TypeScript state transitions in `src/game/`; React never computes outcomes.
-- **State:** one JSON-serializable `GameState` state machine; `localStorage` snapshot after every accepted action.
-- **Current persistence:** roleless active snapshots hydrate automatically, save after state changes, and preserve corrupt data under a recovery key.
-- **Randomness:** injected deterministic `RandomSource` for role deals and fresh randomized voting order each round.
-- **Role setup:** the role table is the starting preset; in the roles variant Doctor, Detective, and Sheriff are independent GM controls at every player count, with roster-fit validation.
-- **Roles engine:** assignment and night resolution are pure TypeScript; doctor saves, detective results, sheriff outcomes, deaths, and wins stay outside React.
-- **Role reveal:** hold to peek, confirm finished, then manual GM advance; peek visibility is transient and never persisted.
-- **Phases:** setup, deal, discussion, voting, defense, runoff, reveal, night, morning, ended.
-- **Rules engine owns:** roles, deaths, saves, sheriff abstention/self-kill, votes, repeated runoffs, reveals, parity, and win checks.
-- **Privacy:** daytime table and morning report omit secret roles; detective identity/results stay hidden from morning; voted-out roles reveal, night-death roles do not, all roles and the roles-mode event record reveal at game end.
-- **Roleless privacy:** no GM means live play hides mafia and town counts; only neutral status is public until the final reveal.
-- **Night order:** mafia, sheriff, detective, doctor. Sheriff may abstain; doctor saves are publicly announced only when successful; no failure feedback.
-- **Voting:** self-votes are rejected by the engine and omitted from UI targets in both variants.
-- **Role-game history:** night actions and consequences are recorded in state but rendered only after the game ends.
-- **Validation:** engine unit tests are the executable house rules; privacy/non-leakage tests are mandatory.
-- **UI:** cinematic but legible mobile-first GM-only cockpit, 44px touch targets, visible focus, reduced-motion support, no router.
-- **Flow:** roleless skips assignment/reveal; roles use hold + confirmation + manual GM advance; GM explicitly starts discussion/voting/night transitions.
-- **Safety:** invalid setup blocks start; phase advances, eliminations, and new games require confirmation; new games preserve names only.
-- **Alerts:** discussion and defense timers default to 5:00/0:30, remain configurable and GM-controlled, with optional sound/vibration.
-- **Tie defenses:** the defense preset is an upper bound applied separately to every tied candidate in sequence; the GM can advance early, waive a defense, or restart an expired current timer.
-- **Build order:** shell, engine, setup/deal, day loop, night wizard, rules/offline/deploy polish.
+- **Source of truth:** pure, immutable TypeScript transitions in `src/game/`, reached through `applyAction(state, action, random)`. React never computes outcomes.
+- **State:** one JSON-serializable `Session` (game, settings, timer, night draft, checkpoints) saved to `localStorage` after every accepted change.
+- **Persistence:** version 2 snapshots with full validation; version 1 saves are converted on load; unreadable saves move to a recovery key with a visible notice; failed writes warn instead of crashing. The roster is saved separately.
+- **Recovery:** up to 100 checkpoints, one per game action. Undo restores the previous checkpoint and restore truncates later ones. Neither can return to the private deal. Roles-game activity and notes are end-game-only.
+- **Randomness:** injected `RandomSource` (crypto-backed in the app, deterministic in tests); no hidden `Math.random` in the engine.
+- **Timers:** deadline-based (`endsAt`), so they stay accurate when the phone locks or reloads; optional sound and vibration at zero.
+- **Role setup:** the role table is the starting preset; Doctor, Detective, and Sheriff are independent GM controls, and the detective defaults on from 9 players.
+- **Setup validation:** a three-step flow checks player count/names, role mix, and whole-number timer bounds before game creation.
+- **Phases:** `deal`, `night`, `morning`, `discussion`, `voting`, `defense`, `runoff`, `reveal`, `ended`. `deal` (private) and `reveal` (public voted-out) are separate.
+- **Flow:** both variants start with a private reveal. Roles games then run Night N, morning, and Day N. Roleless games go straight to discussion.
+- **Privacy:** group-visible screens show names and alive/out only. The private reveal shows a role only while held, hides it on cancel, blur, or backgrounding, turns off after confirmation, and has no Undo or Exit. Night-death roles never reveal. Voted-out roles do. Every role reveals at game end.
+- **Night:** fixed order mafia, sheriff, detective, doctor. The engine owns legal targets: mafia not their own, sheriff not self, detective not self or dead, doctor may self-protect. The detective's answer is shown privately to the GM. Only a successful doctor save is announced.
+- **Voting:** shuffled order, self-votes rejected, live tally plus attribution, plurality out. Ties go to sequential defenses, then a runoff excluding tied players, repeated until broken. A tie of every living player becomes a full revote.
+- **Wins:** town at zero mafia. Mafia when they equal or outnumber the town, checked after every death. A night that decides the game still shows the morning report.
+- **Safety:** invalid setup blocks start; every phase advance, elimination, restore, exit, and new game requires confirmation; new games keep names only.
+- **UI:** mobile-first GM cockpit; usable at 320px; 44px touch targets; visible focus; safe-area insets; reduced motion; accessible dialogs; no router.
+- **Validation:** engine unit tests are the executable house rules; privacy/non-leakage tests are mandatory; CI runs the type check and unit tests before deploying.

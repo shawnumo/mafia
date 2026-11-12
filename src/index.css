@@ -9,6 +9,9 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   color-scheme: light;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
@@ -23,16 +26,23 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  min-height: 100dvh;
   background:
     radial-gradient(circle at top, rgba(191, 91, 61, 0.07), transparent 28%),
     linear-gradient(180deg, #efe6d8 0%, #e8dfd0 100%);
   color: #132122;
+  overscroll-behavior-y: none;
 }
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
+}
+
+button {
+  touch-action: manipulation;
 }
 
 ::selection {
@@ -41,8 +51,10 @@ select {
 
 button:focus-visible,
 input:focus-visible,
-select:focus-visible {
-  outline: 3px solid rgba(191, 91, 61, 0.75);
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid rgba(191, 91, 61, 0.85);
   outline-offset: 2px;
 }
 
@@ -55,11 +67,32 @@ select:focus-visible {
   border-radius: 999px;
 }
 
+@layer components {
+  /* Full-height screen that respects the notch and home indicator on installed PWAs. */
+  .screen {
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding-top: max(1.5rem, env(safe-area-inset-top));
+    padding-bottom: max(2rem, env(safe-area-inset-bottom));
+    padding-left: max(1.25rem, env(safe-area-inset-left));
+    padding-right: max(1.25rem, env(safe-area-inset-right));
+  }
+
+  @media (min-width: 640px) {
+    .screen {
+      padding-left: max(2.5rem, env(safe-area-inset-left));
+      padding-right: max(2.5rem, env(safe-area-inset-right));
+    }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }

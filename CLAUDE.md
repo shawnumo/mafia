@@ -15,10 +15,12 @@ Read `PRD.md` before changing behavior. It is the locked product contract. Read 
 ## Development
 
 ```powershell
-npm install
+npm ci
 npm run dev
+npm run typecheck
 npm run test
 npm run build
+npm run test:e2e   # builds, then runs Playwright against the preview server
 ```
 
 Use strict TypeScript. Keep changes narrow, follow existing naming, and do not add dependencies without a clear architectural reason. Do not commit or push unless explicitly asked.

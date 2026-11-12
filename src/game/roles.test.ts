@@ -1,11 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { defaultMafiaCount, getRoleCounts } from './roles'
+import { defaultDetectiveEnabled, defaultMafiaCount, getRoleCounts } from './roles'
 
 describe('role setup', () => {
   it('uses the locked mafia defaults', () => {
     expect(defaultMafiaCount(7)).toBe(2)
-    expect(defaultMafiaCount(11)).toBe(3)
+    expect(defaultMafiaCount(8)).toBe(2)
+    expect(defaultMafiaCount(9)).toBe(3)
+    expect(defaultMafiaCount(13)).toBe(3)
+    expect(defaultMafiaCount(14)).toBe(4)
     expect(defaultMafiaCount(15)).toBe(4)
+    expect(() => defaultMafiaCount(6)).toThrow('7 to 15')
+  })
+
+  it('includes the detective by default from 9 players', () => {
+    expect(defaultDetectiveEnabled(8)).toBe(false)
+    expect(defaultDetectiveEnabled(9)).toBe(true)
+    expect(getRoleCounts({ playerCount: 12, variant: 'roles' }).detective).toBe(1)
   })
 
   it('creates a roleless game with only mafia and civilians', () => {
@@ -34,7 +44,7 @@ describe('role setup', () => {
       variant: 'roles',
       doctorEnabled: true,
       detectiveEnabled: false,
-      sheriffEnabled: true,
+      sheriffEnabled: true
     })).toEqual({
       mafia: 3,
       doctor: 1,
@@ -58,5 +68,10 @@ describe('role setup', () => {
       sheriff: 1,
       civilian: 2
     })
+  })
+
+  it('rejects mixes that do not fit or start at parity', () => {
+    expect(() => getRoleCounts({ playerCount: 7, variant: 'roleless', mafiaOverride: 0 })).toThrow('does not fit')
+    expect(() => getRoleCounts({ playerCount: 8, variant: 'roleless', mafiaOverride: 4 })).toThrow('outnumbered')
   })
 })
