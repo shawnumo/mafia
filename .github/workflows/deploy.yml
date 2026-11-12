@@ -27,6 +27,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run test
       - run: npm run build
+        env:
+          MAFIA_BASE_PATH: /mafia/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

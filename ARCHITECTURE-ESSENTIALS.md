@@ -1,6 +1,6 @@
 # Architecture Essentials
 
-- **Stack:** React 18, Vite, strict TypeScript, Tailwind v3, Vitest, Playwright, `vite-plugin-pwa`, GitHub Pages. Exact-pinned dependencies, npm only.
+- **Stack:** React 18, Vite, strict TypeScript, Tailwind v3, Vitest, Playwright, `vite-plugin-pwa`, Cloudflare Pages (primary) and GitHub Pages; the base path comes from `MAFIA_BASE_PATH` (default `/`). Exact-pinned dependencies, npm only.
 - **Runtime:** one offline-first mobile web app on the GM's phone; no backend or accounts in v1.
 - **Source of truth:** pure, immutable TypeScript transitions in `src/game/`, reached through `applyAction(state, action, random)`. React never computes outcomes.
 - **State:** one JSON-serializable `Session` (game, settings, timer, night draft, checkpoints) saved to `localStorage` after every accepted change.

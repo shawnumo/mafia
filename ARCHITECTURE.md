@@ -23,7 +23,7 @@ This document is the implementation contract for the Mafia GM cockpit described 
 | Tests | Vitest (unit), Playwright (end-to-end) | Engine, session, persistence, privacy, and full flows |
 | Persistence | `localStorage` adapter | Snapshot after every accepted change; resume after reload |
 | Offline | `vite-plugin-pwa` (prompt mode) | Installable shell and cached static assets |
-| Deployment | GitHub Pages via Actions | Type check, unit tests, then static `dist/` deployment |
+| Deployment | Cloudflare Pages (primary, served at `/`) and GitHub Pages via Actions (built with `MAFIA_BASE_PATH=/mafia/`) | Type check, unit tests, then static `dist/` deployment; GitHub Pages is blocked in some regions |
 
 Dependencies are pinned to exact versions and should remain intentionally small. Add a library only when it removes meaningful complexity or is required by the locked stack. npm is the only package manager; `package-lock.json` is the lockfile CI uses.
 
